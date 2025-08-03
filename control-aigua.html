@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Duresa de l'Aigua</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Control Aigua">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-gray {
+            background: #6c757d;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .monthly-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .monthly-stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .regeneration-history {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💧 Control de Duresa de l'Aigua</h1>
+            <p>Seguiment i anàlisi avançat del sistema de tractament d'aigua</p>
+        </div>
+        
+        <div class="card">
+            <h2>Nou Registre</h2>
+            <div class="input-group">
+                <label for="hardness">Duresa de l'aigua (°f):</label>
+                <input type="number" id="hardness" step="0.1" placeholder="Ex: 25.5">
+            </div>
+            <div class="input-group">
+                <label for="liters">Litres pendents per regeneració:</label>
+                <input type="number" id="liters" step="1" placeholder="Ex: 1200">
+            </div>
+            <div class="input-group">
+                <label for="recordDate">Data i hora (opcional - deixa buit per ara):</label>
+                <input type="datetime-local" id="recordDate">
+            </div>
+            <button class="btn" onclick="addRecord()">Afegir Registre</button>
+            <button class="btn btn-secondary" onclick="addRegeneration()">Regeneració Realitzada</button>
+            <button class="btn btn-gray" onclick="clearDate()">🗑️ Netejar Data</button>
+        </div>
+
+        <div class="card">
+            <h2>💾 Gestió de Dades</h2>
+            <p style="margin-bottom: 15px; color: #666;">Sincronitza les dades amb el teu fitxer Excel principal i crea còpies de seguretat automàtiques.</p>
+            
+            <!-- Configuració de ruta -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #667eea;">
+                <h4 style="margin: 0 0 10px 0;">⚙️ Configuració de Descàrregues</h4>
+                <div style="margin-bottom: 10px;">
+                    <label for="downloadPath" style="font-weight: normal; margin-bottom: 5px; display: block;">
+                        📁 Ruta recomanada per guardar els fitxers:
+                    </label>
+                    <input type="text" id="downloadPath" placeholder="Ex: C:\Users\ElTeuNom\Google Drive\Control Aigua" 
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace;">
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-gray" onclick="setGoogleDrivePath()">📂 Google Drive</button>
+                    <button class="btn btn-gray" onclick="setOneDrivePath()">📂 OneDrive</button>
+                    <button class="btn btn-gray" onclick="setCustomPath()">📂 Ruta Personalitzada</button>
+                </div>
+                <small style="color: #666; display: block; margin-top: 8px;">
+                    💡 <strong>Consell:</strong> Configura el teu navegador per descarregar sempre a aquesta carpeta automàticament.
+                </small>
+            </div>
+            
+            <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 10px 0;">📋 Com configurar descàrregues automàtiques:</h4>
+                <div id="browserInstructions">
+                    <p style="margin: 5px 0;"><strong>Google Chrome:</strong></p>
+                    <ol style="margin: 0 0 10px 20px; color: #555; font-size: 14px;">
+                        <li>Configuració → Descàrregues</li>
+                        <li>Activa "Pregunta on guardar cada fitxer abans de descarregar-lo"</li>
+                        <li>O configura la ubicació per defecte</li>
+                    </ol>
+                    <p style="margin: 5px 0;"><strong>Firefox:</strong></p>
+                    <ol style="margin: 0 0 10px 20px; color: #555; font-size: 14px;">
+                        <li>Configuració → General → Fitxers i aplicacions</li>
+                        <li>Selecciona "Pregunta sempre on guardar els fitxers"</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <button class="btn" onclick="exportMainExcel()">📊 Actualitzar Excel Principal</button>
+                <button class="btn btn-secondary" onclick="exportBackupExcel()">🗄️ Crear Còpia de Seguretat</button>
+                <button class="btn btn-gray" onclick="document.getElementById('fileInput').click()">📁 Importar Excel</button>
+            </div>
+            
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="importFromExcel(event)">
+            
+            <!-- Instruccions de sincronització -->
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <h4 style="margin: 0 0 10px 0;">☁️ Sincronització amb el núvol:</h4>
+                <div id="syncInstructions"></div>
+            </div>
+            
+            <!-- Auto-save indicator -->
+            <div id="autoSaveStatus" style="margin-top: 15px; padding: 12px; border-radius: 8px; display: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="autoSaveIcon">💾</span>
+                    <div>
+                        <div id="autoSaveText" style="font-weight: 600;"></div>
+                        <div id="autoSavePath" style="font-size: 12px; opacity: 0.8; margin-top: 2px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Estadístiques Generals</h2>
+            <div id="alertContainer"></div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgDailyConsumption">-</div>
+                    <div class="stat-label">Consum mitjà diari (L)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgHardness">-</div>
+                    <div class="stat-label">Duresa mitjana (°f)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRecords">-</div>
+                    <div class="stat-label">Registres totals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgTimeBetweenRegen">-</div>
+                    <div class="stat-label">Dies mitjans entre regeneracions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRegenerations">-</div>
+                    <div class="stat-label">Regeneracions totals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="lastRegeneration">-</div>
+                    <div class="stat-label">Dies des de l'última regeneració</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Anàlisi Mensual</h2>
+            <div class="month-selector">
+                <select id="monthSelect" onchange="updateMonthlyStats()">
+                    <option value="">Tots els mesos</option>
+                </select>
+                <select id="yearSelect" onchange="updateMonthlyStats()">
+                    <option value="">Tots els anys</option>
+                </select>
+            </div>
+            <div class="monthly-stats" id="monthlyStats"></div>
+        </div>
+
+        <div class="card">
+            <h2>Gràfics i Tendències</h2>
+            <div class="charts-grid">
+                <div class="card">
+                    <h3>Evolució de la Duresa</h3>
+                    <div class="chart-container">
+                        <canvas id="hardnessChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Consum Diari d'Aigua</h3>
+                    <div class="chart-container">
+                        <canvas id="consumptionChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Litres Pendents</h3>
+                    <div class="chart-container">
+                        <canvas id="litersChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Consum Mensual</h3>
+                    <div class="chart-container">
+                        <canvas id="monthlyConsumptionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Historial de Regeneracions</h2>
+            <div id="regenerationHistory"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Historial de Registres</h2>
+            <button class="btn btn-danger" onclick="clearAllData()">🗑️ Esborrar Tot</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data i Hora</th>
+                        <th>Duresa (°f)</th>
+                        <th>Litres Pendents</th>
+                        <th>Consum (L)</th>
+                        <th>Accions</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsTable">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let records = JSON.parse(localStorage.getItem('waterRecords') || '[]');
+        let regenerations = JSON.parse(localStorage.getItem('regenerations') || '[]');
+        let charts = {};
+
+        function saveData() {
+            localStorage.setItem('waterRecords', JSON.stringify(records));
+            localStorage.setItem('regenerations', JSON.stringify(regenerations));
+        }
+
+        function addRecord() {
+            console.log('Afegint registre...');
+            
+            const hardness = parseFloat(document.getElementById('hardness').value);
+            const liters = parseInt(document.getElementById('liters').value);
+            const customDate = document.getElementById('recordDate').value;
+            
+            if (isNaN(hardness) || isNaN(liters)) {
+                alert('Si us plau, introdueix valors vàlids per duresa i litres');
+                return;
+            }
+            
+            const recordDateTime = customDate ? new Date(customDate) : new Date();
+            
+            const record = {
+                id: Date.now(),
+                datetime: recordDateTime.toISOString(),
+                hardness: hardness,
+                liters: liters,
+                isRegeneration: false
+            };
+            
+            records.push(record);
+            records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            
+            saveData();
+            updateDisplay();
+            
+            // Netejar camps
+            document.getElementById('hardness').value = '';
+            document.getElementById('liters').value = '';
+            document.getElementById('recordDate').value = '';
+            
+            console.log('Registre afegit correctament');
+        }
+
+        function addRegeneration() {
+            console.log('Afegint regeneració...');
+            
+            const customDate = document.getElementById('recordDate').value;
+            const recordDateTime = customDate ? new Date(customDate) : new Date();
+            
+            const regeneration = {
+                id: Date.now(),
+                datetime: recordDateTime.toISOString(),
+                hardness: 0,
+                liters: 0,
+                isRegeneration: true
+            };
+            
+            records.push(regeneration);
+            regenerations.push(recordDateTime.toISOString());
+            
+            records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            regenerations.sort((a, b) => new Date(b) - new Date(a));
+            
+            saveData();
+            updateDisplay();
+            
+            document.getElementById('recordDate').value = '';
+            
+            console.log('Regeneració afegida correctament');
+        }
+
+        function clearDate() {
+            document.getElementById('recordDate').value = '';
+        }
+
+        function deleteRecord(id) {
+            if (confirm('Estàs segur que vols eliminar aquest registre?')) {
+                const record = records.find(r => r.id === id);
+                if (record && record.isRegeneration) {
+                    regenerations = regenerations.filter(r => r !== record.datetime);
+                }
+                records = records.filter(record => record.id !== id);
+                saveData();
+                updateDisplay();
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('Estàs segur que vols esborrar totes les dades?')) {
+                records = [];
+                regenerations = [];
+                saveData();
+                updateDisplay();
+            }
+        }
+
+        function calculateConsumption(currentRecord, previousRecord) {
+            if (!previousRecord || previousRecord.isRegeneration) return 0;
+            return Math.max(0, previousRecord.liters - currentRecord.liters);
+        }
+
+        function getTimeBetweenRegenerations() {
+            if (regenerations.length < 2) return [];
+            
+            const times = [];
+            for (let i = 0; i < regenerations.length - 1; i++) {
+                const diff = new Date(regenerations[i]) - new Date(regenerations[i + 1]);
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                times.push(days);
+            }
+            return times;
+        }
+
+        function getDaysSinceLastRegeneration() {
+            if (regenerations.length === 0) return null;
+            const lastRegen = new Date(regenerations[0]);
+            const now = new Date();
+            return Math.floor((now - lastRegen) / (1000 * 60 * 60 * 24));
+        }
+
+        function getMonthlyData() {
+            const monthlyData = {};
+            
+            records.filter(r => !r.isRegeneration).forEach((record, index) => {
+                const date = new Date(record.datetime);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = {
+                        hardnessValues: [],
+                        consumptions: [],
+                        totalConsumption: 0,
+                        recordCount: 0,
+                        year: date.getFullYear(),
+                        month: date.getMonth() + 1
+                    };
+                }
+                
+                monthlyData[monthKey].hardnessValues.push(record.hardness);
+                monthlyData[monthKey].recordCount++;
+                
+                const previousRecord = records[index + 1];
+                const consumption = calculateConsumption(record, previousRecord);
+                if (consumption > 0) {
+                    monthlyData[monthKey].consumptions.push(consumption);
+                    monthlyData[monthKey].totalConsumption += consumption;
+                }
+            });
+            
+            // Calcular mitjanes
+            Object.keys(monthlyData).forEach(key => {
+                const data = monthlyData[key];
+                data.avgHardness = data.hardnessValues.length > 0 ? 
+                    data.hardnessValues.reduce((a, b) => a + b, 0) / data.hardnessValues.length : 0;
+                data.avgDailyConsumption = data.consumptions.length > 0 ? 
+                    data.totalConsumption / data.consumptions.length : 0;
+            });
+            
+            return monthlyData;
+        }
+
+        function updateMonthSelectors() {
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            
+            const months = new Set();
+            const years = new Set();
+            
+            records.forEach(record => {
+                const date = new Date(record.datetime);
+                months.add(date.getMonth() + 1);
+                years.add(date.getFullYear());
+            });
+            
+            // Actualitzar selector de mesos
+            monthSelect.innerHTML = '<option value="">Tots els mesos</option>';
+            Array.from(months).sort((a, b) => a - b).forEach(month => {
+                const monthName = new Date(2000, month - 1, 1).toLocaleString('ca-ES', { month: 'long' });
+                monthSelect.innerHTML += `<option value="${month}">${monthName}</option>`;
+            });
+            
+            // Actualitzar selector d'anys
+            yearSelect.innerHTML = '<option value="">Tots els anys</option>';
+            Array.from(years).sort((a, b) => b - a).forEach(year => {
+                yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+        }
+
+        function updateMonthlyStats() {
+            const selectedMonth = document.getElementById('monthSelect').value;
+            const selectedYear = document.getElementById('yearSelect').value;
+            const monthlyData = getMonthlyData();
+            const container = document.getElementById('monthlyStats');
+            
+            let filteredData = Object.entries(monthlyData);
+            
+            // Filtrar per mes i any si estan seleccionats
+            if (selectedMonth || selectedYear) {
+                filteredData = filteredData.filter(([key, data]) => {
+                    return (!selectedMonth || data.month == selectedMonth) &&
+                           (!selectedYear || data.year == selectedYear);
+                });
+            }
+            
+            container.innerHTML = '';
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<p>No hi ha dades per als filtres seleccionats.</p>';
+                return;
+            }
+            
+            filteredData.forEach(([key, data]) => {
+                const monthName = new Date(data.year, data.month - 1, 1).toLocaleString('ca-ES', { month: 'long', year: 'numeric' });
+                
+                container.innerHTML += `
+                    <div class="monthly-stat-card">
+                        <h4>${monthName}</h4>
+                        <div class="stat-value">${data.avgHardness.toFixed(1)} °f</div>
+                        <div class="stat-label">Duresa mitjana</div>
+                        <hr style="margin: 10px 0; opacity: 0.3;">
+                        <div class="stat-value">${data.avgDailyConsumption.toFixed(1)} L</div>
+                        <div class="stat-label">Consum mitjà diari</div>
+                        <hr style="margin: 10px 0; opacity: 0.3;">
+                        <div class="stat-value">${data.totalConsumption} L</div>
+                        <div class="stat-label">Consum total</div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateRegenerationHistory() {
+            const container = document.getElementById('regenerationHistory');
+            
+            if (regenerations.length === 0) {
+                container.innerHTML = '<p>No hi ha regeneracions registrades.</p>';
+                return;
+            }
+            
+            const times = getTimeBetweenRegenerations();
+            let html = '';
+            
+            regenerations.forEach((regen, index) => {
+                const date = new Date(regen).toLocaleString('ca-ES');
+                const daysBetween = times[index] ? ` (${times[index]} dies després de l'anterior)` : '';
+                
+                html += `
+                    <div class="regeneration-history">
+                        <strong>🔄 Regeneració ${index + 1}</strong><br>
+                        📅 ${date}${daysBetween}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function createCharts() {
+            const nonRegenRecords = records.filter(r => !r.isRegeneration).reverse();
+            
+            // Gràfic de duresa
+            const hardnessCtx = document.getElementById('hardnessChart');
+            if (charts.hardness) charts.hardness.destroy();
+            
+            charts.hardness = new Chart(hardnessCtx, {
+                type: 'line',
+                data: {
+                    labels: nonRegenRecords.map(r => new Date(r.datetime).toLocaleDateString('ca-ES')),
+                    datasets: [{
+                        label: 'Duresa (°f)',
+                        data: nonRegenRecords.map(r => r.hardness),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+            
+            // Gràfic de consum
+            const consumptionData = [];
+            for (let i = 0; i < records.length - 1; i++) {
+                const consumption = calculateConsumption(records[i], records[i + 1]);
+                if (consumption > 0) {
+                    consumptionData.push({
+                        date: new Date(records[i].datetime),
+                        consumption: consumption
+                    });
+                }
+            }
+            
+            const consumptionCtx = document.getElementById('consumptionChart');
+            if (charts.consumption) charts.consumption.destroy();
+            
+            charts.consumption = new Chart(consumptionCtx, {
+                type: 'bar',
+                data: {
+                    labels: consumptionData.map(d => d.date.toLocaleDateString('ca-ES')),
+                    datasets: [{
+                        label: 'Consum (L)',
+                        data: consumptionData.map(d => d.consumption),
+                        backgroundColor: '#74b9ff',
+                        borderColor: '#0984e3',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Gràfic de litres pendents
+            const litersCtx = document.getElementById('litersChart');
+            if (charts.liters) charts.liters.destroy();
+            
+            charts.liters = new Chart(litersCtx, {
+                type: 'line',
+                data: {
+                    labels: nonRegenRecords.map(r => new Date(r.datetime).toLocaleDateString('ca-ES')),
+                    datasets: [{
+                        label: 'Litres Pendents',
+                        data: nonRegenRecords.map(r => r.liters),
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Gràfic mensual
+            const monthlyData = getMonthlyData();
+            const monthlyLabels = Object.keys(monthlyData).sort();
+            
+            const monthlyCtx = document.getElementById('monthlyConsumptionChart');
+            if (charts.monthly) charts.monthly.destroy();
+            
+            charts.monthly = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyLabels.map(key => {
+                        const [year, month] = key.split('-');
+                        return new Date(year, month - 1, 1).toLocaleDateString('ca-ES', { month: 'short', year: 'numeric' });
+                    }),
+                    datasets: [{
+                        label: 'Consum Total (L)',
+                        data: monthlyLabels.map(key => monthlyData[key].totalConsumption),
+                        backgroundColor: '#764ba2',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDisplay() {
+            console.log('Actualitzant pantalla...');
+            
+            const tbody = document.getElementById('recordsTable');
+            tbody.innerHTML = '';
+            
+            records.forEach((record, index) => {
+                const row = tbody.insertRow();
+                const previousRecord = records[index + 1];
+                const consumption = calculateConsumption(record, previousRecord);
+                
+                row.innerHTML = `
+                    <td>${new Date(record.datetime).toLocaleString('ca-ES')}</td>
+                    <td>${record.isRegeneration ? 'REGENERACIÓ' : record.hardness + ' °f'}</td>
+                    <td>${record.isRegeneration ? '-' : record.liters + ' L'}</td>
+                    <td>${consumption > 0 ? consumption + ' L' : '-'}</td>
+                    <td><button class="btn btn-danger" onclick="deleteRecord(${record.id})">Eliminar</button></td>
+                `;
+                
+                if (record.isRegeneration) {
+                    row.style.backgroundColor = '#e8f5e8';
+                }
+            });
+            
+            updateStats();
+            updateMonthSelectors();
+            updateMonthlyStats();
+            updateRegenerationHistory();
+            createCharts();
+        }
+
+        function updateStats() {
+            const nonRegenRecords = records.filter(r => !r.isRegeneration);
+            
+            // Consum mitjà diari
+            let totalConsumption = 0;
+            let consumptionDays = 0;
+            
+            for (let i = 0; i < records.length - 1; i++) {
+                const consumption = calculateConsumption(records[i], records[i + 1]);
+                if (consumption > 0) {
+                    totalConsumption += consumption;
+                    consumptionDays++;
+                }
+            }
+            
+            const avgDailyConsumption = consumptionDays > 0 ? (totalConsumption / consumptionDays).toFixed(1) : 0;
+            
+            // Duresa mitjana
+            const avgHardness = nonRegenRecords.length > 0 ? 
+                (nonRegenRecords.reduce((sum, r) => sum + r.hardness, 0) / nonRegenRecords.length).toFixed(1) : 0;
+            
+            // Temps entre regeneracions
+            const timeBetween = getTimeBetweenRegenerations();
+            const avgTimeBetweenRegen = timeBetween.length > 0 ? 
+                (timeBetween.reduce((a, b) => a + b, 0) / timeBetween.length).toFixed(1) : 0;
+            
+            // Dies des de l'última regeneració
+            const daysSinceLastRegen = getDaysSinceLastRegeneration();
+            
+            // Actualitzar UI
+            document.getElementById('avgDailyConsumption').textContent = avgDailyConsumption;
+            document.getElementById('avgHardness').textContent = avgHardness;
+            document.getElementById('totalRecords').textContent = records.length;
+            document.getElementById('avgTimeBetweenRegen').textContent = avgTimeBetweenRegen || '-';
+            document.getElementById('totalRegenerations').textContent = regenerations.length;
+            document.getElementById('lastRegeneration').textContent = daysSinceLastRegen !== null ? daysSinceLastRegen : '-';
+            
+            // Comprovar avisos
+            checkAlert(parseFloat(avgDailyConsumption));
+        }
+
+        function checkAlert(avgDailyConsumption) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = '';
+            
+            if (records.length === 0 || avgDailyConsumption === 0) return;
+            
+            const lastRecord = records.find(r => !r.isRegeneration);
+            if (!lastRecord) return;
+            
+            const currentLiters = lastRecord.liters;
+            
+            if (currentLiters <= 200) {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <span>🚨</span>
+                        <div>
+                            <strong>URGENT: Només queden ${currentLiters}L! Cal fer regeneració immediatament.</strong>
+                        </div>
+                    </div>
+                `;
+            } else if (avgDailyConsumption > 0) {
+                const daysUntilRegeneration = Math.floor(currentLiters / avgDailyConsumption);
+                const criticalDays = Math.floor(200 / avgDailyConsumption);
+                
+                if (daysUntilRegeneration <= criticalDays) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-warning">
+                            <span>⚠️</span>
+                            <div>
+                                <strong>ATENCIÓ: Aproximadament ${daysUntilRegeneration} dies per arribar als 200L.</strong>
+                                <br><small>Basat en consum de ${avgDailyConsumption}L/dia</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Variables globals per configuració
+        let userSettings = JSON.parse(localStorage.getItem('waterTrackerSettings') || '{}');
+
+        // Funcions de configuració de ruta
+        function setGoogleDrivePath() {
+            const username = prompt('Introdueix el teu nom d\'usuari de Windows:', userSettings.username || '');
+            if (username) {
+                const path = `C:\\Users\\${username}\\Google Drive\\Control Aigua`;
+                document.getElementById('downloadPath').value = path;
+                userSettings.downloadPath = path;
+                userSettings.username = username;
+                userSettings.cloudService = 'Google Drive';
+                saveSettings();
+                updateSyncInstructions();
+            }
+        }
+
+        function setOneDrivePath() {
+            const username = prompt('Introdueix el teu nom d\'usuari de Windows:', userSettings.username || '');
+            if (username) {
+                const path = `C:\\Users\\${username}\\OneDrive\\Control Aigua`;
+                document.getElementById('downloadPath').value = path;
+                userSettings.downloadPath = path;
+                userSettings.username = username;
+                userSettings.cloudService = 'OneDrive';
+                saveSettings();
+                updateSyncInstructions();
+            }
+        }
+
+        function setCustomPath() {
+            const path = prompt('Introdueix la ruta completa on vols guardar els fitxers:', userSettings.downloadPath || '');
+            if (path) {
+                document.getElementById('downloadPath').value = path;
+                userSettings.downloadPath = path;
+                userSettings.cloudService = 'Personalitzat';
+                saveSettings();
+                updateSyncInstructions();
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('waterTrackerSettings', JSON.stringify(userSettings));
+        }
+
+        function loadSettings() {
+            if (userSettings.downloadPath) {
+                document.getElementById('downloadPath').value = userSettings.downloadPath;
+            }
+            updateSyncInstructions();
+        }
+
+        function updateSyncInstructions() {
+            const container = document.getElementById('syncInstructions');
+            const path = userSettings.downloadPath;
+            const service = userSettings.cloudService;
+            
+            if (!path) {
+                container.innerHTML = '<p style="color: #666; margin: 0;">Configura primer la ruta de descàrregues per veure les instruccions de sincronització.</p>';
+                return;
+            }
+
+            let instructions = '';
+            
+            if (service === 'Google Drive') {
+                instructions = `
+                    <p style="margin: 0 0 10px 0;"><strong>1. Instal·la Google Drive per a l'escriptori</strong></p>
+                    <p style="margin: 0 0 10px 0;"><strong>2. Crea la carpeta:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${path}</code></p>
+                    <p style="margin: 0 0 10px 0;"><strong>3. Configura el navegador per descarregar a aquesta carpeta</strong></p>
+                    <p style="margin: 0; color: #28a745;"><strong>✅ Els fitxers es sincronitzaran automàticament amb Google Drive!</strong></p>
+                `;
+            } else if (service === 'OneDrive') {
+                instructions = `
+                    <p style="margin: 0 0 10px 0;"><strong>1. OneDrive ja està integrat a Windows</strong></p>
+                    <p style="margin: 0 0 10px 0;"><strong>2. Crea la carpeta:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${path}</code></p>
+                    <p style="margin: 0 0 10px 0;"><strong>3. Configura el navegador per descarregar a aquesta carpeta</strong></p>
+                    <p style="margin: 0; color: #28a745;"><strong>✅ Els fitxers es sincronitzaran automàticament amb OneDrive!</strong></p>
+                `;
+            } else {
+                instructions = `
+                    <p style="margin: 0 0 10px 0;"><strong>Ruta configurada:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${path}</code></p>
+                    <p style="margin: 0 0 10px 0;"><strong>1. Crea aquesta carpeta si no existeix</strong></p>
+                    <p style="margin: 0 0 10px 0;"><strong>2. Configura el navegador per descarregar a aquesta carpeta</strong></p>
+                    <p style="margin: 0; color: #ffc107;"><strong>💡 Considera usar Google Drive o OneDrive per sincronització automàtica</strong></p>
+                `;
+            }
+            
+            container.innerHTML = instructions;
+        }
+
+        function showAutoSaveStatus(message, type) {
+            const statusDiv = document.getElementById('autoSaveStatus');
+            const textDiv = document.getElementById('autoSaveText');
+            const pathDiv = document.getElementById('autoSavePath');
+            const iconDiv = document.getElementById('autoSaveIcon');
+            
+            // Colors i icones segons el tipus
+            const styles = {
+                'success': { 
+                    bg: '#d4edda', 
+                    border: '#c3e6cb', 
+                    text: '#155724',
+                    icon: '✅'
+                },
+                'info': { 
+                    bg: '#cce7ff', 
+                    border: '#b8daff', 
+                    text: '#004085',
+                    icon: '💾'
+                },
+                'warning': { 
+                    bg: '#fff3cd', 
+                    border: '#ffeaa7', 
+                    text: '#856404',
+                    icon: '⚠️'
+                }
+            };
+            
+            const style = styles[type] || styles.info;
+            
+            statusDiv.style.display = 'block';
+            statusDiv.style.backgroundColor = style.bg;
+            statusDiv.style.border = `1px solid ${style.border}`;
+            statusDiv.style.color = style.text;
+            
+            iconDiv.textContent = style.icon;
+            textDiv.textContent = message;
+            
+            // Mostrar ruta configurada
+            const configuredPath = userSettings.downloadPath;
+            if (configuredPath) {
+                pathDiv.textContent = `Ruta configurada: ${configuredPath}`;
+                pathDiv.style.display = 'block';
+            } else {
+                pathDiv.style.display = 'none';
+            }
+            
+            // Ocultar després de 8 segons
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 8000);
+        }
+
+        // Funcions d'exportació millorades amb instruccions
+        function exportMainExcel() {
+            if (records.length === 0) {
+                alert('No hi ha dades per exportar!');
+                return;
+            }
+
+            const wb = createExcelWorkbook();
+            const fileName = 'control_aigua.xlsx';
+            
+            // Mostrar instruccions abans de descarregar
+            if (!userSettings.downloadPath) {
+                const setupPath = confirm('No tens configurada una ruta de descàrregues. Vols configurar-la ara per facilitar la gestió dels fitxers?');
+                if (setupPath) {
+                    setGoogleDrivePath();
+                    return;
+                }
+            }
+            
+            XLSX.writeFile(wb, fileName);
+            
+            let statusMessage = 'Fitxer principal actualitzat: control_aigua.xlsx';
+            if (userSettings.downloadPath) {
+                statusMessage += ` - Guarda\'l a: ${userSettings.downloadPath}`;
+            }
+            
+            showAutoSaveStatus(statusMessage, 'success');
+            
+            // Mostrar popup amb instruccions si és la primera vegada
+            if (!userSettings.hasShownInstructions) {
+                setTimeout(() => {
+                    alert(`📁 IMPORTANT: Guarda el fitxer a la ruta configurada:\n${userSettings.downloadPath || 'La carpeta que has configurat'}\n\n💡 Consell: Configura el teu navegador per descarregar sempre a aquesta ubicació.`);
+                    userSettings.hasShownInstructions = true;
+                    saveSettings();
+                }, 1000);
+            }
+
+            console.log('Fitxer Excel principal actualitzat');
+        }
+
+        function exportBackupExcel() {
+            if (records.length === 0) {
+                alert('No hi ha dades per exportar!');
+                return;
+            }
+
+            const wb = createExcelWorkbook();
+            
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+            const fileName = `backup_control_aigua_${dateStr}_${timeStr}.xlsx`;
+            
+            XLSX.writeFile(wb, fileName);
+            
+            let statusMessage = `Còpia de seguretat creada: ${fileName}`;
+            if (userSettings.downloadPath) {
+                statusMessage += ` - Guarda-la a: ${userSettings.downloadPath}`;
+            }
+            
+            showAutoSaveStatus(statusMessage, 'info');
+            console.log('Còpia de seguretat creada');
+        }
+
+        function createExcelWorkbook() {
+            // Preparar dades per Excel amb més informació
+            const excelData = records.map((record, index) => {
+                const previousRecord = records[index + 1];
+                const consumption = calculateConsumption(record, previousRecord);
+                const date = new Date(record.datetime);
+                
+                return {
+                    'Data': date.toLocaleDateString('ca-ES'),
+                    'Hora': date.toLocaleTimeString('ca-ES'),
+                    'Data i Hora Completa': date.toLocaleString('ca-ES'),
+                    'Tipus': record.isRegeneration ? 'REGENERACIÓ' : 'REGISTRE',
+                    'Duresa (°f)': record.isRegeneration ? '' : record.hardness,
+                    'Litres Pendents': record.isRegeneration ? '' : record.liters,
+                    'Consum Calculat (L)': consumption > 0 ? consumption : '',
+                    'Mes': date.toLocaleString('ca-ES', { month: 'long' }),
+                    'Any': date.getFullYear()
+                };
+            });
+
+            // Estadístiques generals
+            const nonRegenRecords = records.filter(r => !r.isRegeneration);
+            let totalConsumption = 0;
+            let consumptionDays = 0;
+            
+            for (let i = 0; i < records.length - 1; i++) {
+                const consumption = calculateConsumption(records[i], records[i + 1]);
+                if (consumption > 0) {
+                    totalConsumption += consumption;
+                    consumptionDays++;
+                }
+            }
+
+            const generalStats = [{
+                'Estadística': 'Total de registres',
+                'Valor': records.length,
+                'Unitat': 'registres'
+            }, {
+                'Estadística': 'Total regeneracions',
+                'Valor': regenerations.length,
+                'Unitat': 'regeneracions'
+            }, {
+                'Estadística': 'Consum mitjà diari',
+                'Valor': consumptionDays > 0 ? (totalConsumption / consumptionDays).toFixed(1) : 0,
+                'Unitat': 'L/dia'
+            }, {
+                'Estadística': 'Duresa mitjana',
+                'Valor': nonRegenRecords.length > 0 ? (nonRegenRecords.reduce((sum, r) => sum + r.hardness, 0) / nonRegenRecords.length).toFixed(1) : 0,
+                'Unitat': '°f'
+            }, {
+                'Estadística': 'Última actualització',
+                'Valor': new Date().toLocaleString('ca-ES'),
+                'Unitat': ''
+            }];
+
+            // Crear estadístiques mensuals
+            const monthlyData = getMonthlyData();
+            const monthlyStats = Object.entries(monthlyData).map(([key, data]) => {
+                const [year, month] = key.split('-');
+                const monthName = new Date(year, month - 1, 1).toLocaleString('ca-ES', { month: 'long', year: 'numeric' });
+                
+                return {
+                    'Mes i Any': monthName,
+                    'Duresa Mitjana (°f)': parseFloat(data.avgHardness.toFixed(1)),
+                    'Consum Mitjà Diari (L)': parseFloat(data.avgDailyConsumption.toFixed(1)),
+                    'Consum Total Mensual (L)': data.totalConsumption,
+                    'Nombre de Registres': data.recordCount,
+                    'Any': parseInt(year),
+                    'Mes': parseInt(month)
+                };
+            }).sort((a, b) => {
+                if (a.Any !== b.Any) return b.Any - a.Any;
+                return b.Mes - a.Mes;
+            });
+
+            // Historial de regeneracions
+            const regenHistory = regenerations.map((regen, index) => {
+                const date = new Date(regen);
+                const nextRegen = regenerations[index - 1];
+                const prevRegen = regenerations[index + 1];
+                
+                let daysSincePrevious = '';
+                if (prevRegen) {
+                    const daysDiff = Math.floor((new Date(regen) - new Date(prevRegen)) / (1000 * 60 * 60 * 24));
+                    daysSincePrevious = daysDiff;
+                }
+                
+                return {
+                    'Número de Regeneració': regenerations.length - index,
+                    'Data': date.toLocaleDateString('ca-ES'),
+                    'Hora': date.toLocaleTimeString('ca-ES'),
+                    'Data i Hora Completa': date.toLocaleString('ca-ES'),
+                    'Dies des de l\'anterior': daysSincePrevious,
+                    'Mes': date.toLocaleString('ca-ES', { month: 'long' }),
+                    'Any': date.getFullYear()
+                };
+            });
+
+            // Crear llibre Excel
+            const wb = XLSX.utils.book_new();
+            
+            // Fulla 1: Resum i Estadístiques Generals
+            const ws1 = XLSX.utils.json_to_sheet(generalStats);
+            XLSX.utils.book_append_sheet(wb, ws1, "Resum General");
+            
+            // Fulla 2: Tots els registres
+            const ws2 = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, ws2, "Registres Detallats");
+            
+            // Fulla 3: Estadístiques mensuals
+            if (monthlyStats.length > 0) {
+                const ws3 = XLSX.utils.json_to_sheet(monthlyStats);
+                XLSX.utils.book_append_sheet(wb, ws3, "Anàlisi Mensual");
+            }
+
+            // Fulla 4: Historial de regeneracions
+            if (regenHistory.length > 0) {
+                const ws4 = XLSX.utils.json_to_sheet(regenHistory);
+                XLSX.utils.book_append_sheet(wb, ws4, "Historial Regeneracions");
+            }
+
+            return wb;
+        }
+
+        function showAutoSaveStatus(message, type) {
+            const statusDiv = document.getElementById('autoSaveStatus');
+            const textDiv = document.getElementById('autoSaveText');
+            
+            // Colors segons el tipus
+            const colors = {
+                'success': { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
+                'info': { bg: '#cce7ff', border: '#b8daff', text: '#004085' },
+                'warning': { bg: '#fff3cd', border: '#ffeaa7', text: '#856404' }
+            };
+            
+            const color = colors[type] || colors.info;
+            
+            statusDiv.style.display = 'block';
+            statusDiv.style.backgroundColor = color.bg;
+            statusDiv.style.border = `1px solid ${color.border}`;
+            statusDiv.style.color = color.text;
+            textDiv.textContent = message;
+            
+            // Ocultar després de 5 segons
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Auto-save cada vegada que s'afegeix un registre
+        function addRecord() {
+            console.log('Afegint registre...');
+            
+            const hardness = parseFloat(document.getElementById('hardness').value);
+            const liters = parseInt(document.getElementById('liters').value);
+            const customDate = document.getElementById('recordDate').value;
+            
+            if (isNaN(hardness) || isNaN(liters)) {
+                alert('Si us plau, introdueix valors vàlids per duresa i litres');
+                return;
+            }
+            
+            const recordDateTime = customDate ? new Date(customDate) : new Date();
+            
+            const record = {
+                id: Date.now(),
+                datetime: recordDateTime.toISOString(),
+                hardness: hardness,
+                liters: liters,
+                isRegeneration: false
+            };
+            
+            records.push(record);
+            records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            
+            saveData();
+            updateDisplay();
+            
+            // Auto-save a Excel si hi ha més de 3 registres
+            if (records.length > 3) {
+                setTimeout(() => {
+                    exportMainExcel();
+                }, 1000);
+            }
+            
+            // Netejar camps
+            document.getElementById('hardness').value = '';
+            document.getElementById('liters').value = '';
+            document.getElementById('recordDate').value = '';
+            
+            console.log('Registre afegit correctament');
+        }
+
+        function addRegeneration() {
+            console.log('Afegint regeneració...');
+            
+            const customDate = document.getElementById('recordDate').value;
+            const recordDateTime = customDate ? new Date(customDate) : new Date();
+            
+            const regeneration = {
+                id: Date.now(),
+                datetime: recordDateTime.toISOString(),
+                hardness: 0,
+                liters: 0,
+                isRegeneration: true
+            };
+            
+            records.push(regeneration);
+            regenerations.push(recordDateTime.toISOString());
+            
+            records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            regenerations.sort((a, b) => new Date(b) - new Date(a));
+            
+            saveData();
+            updateDisplay();
+            
+            // Auto-save després de regeneració
+            setTimeout(() => {
+                exportMainExcel();
+            }, 1000);
+            
+            document.getElementById('recordDate').value = '';
+            
+            console.log('Regeneració afegida correctament');
+        }
+
+        function exportToExcel() {
+            // Redirigir a la funció principal
+            exportMainExcel();
+        }
+
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Llegir la primera fulla (Registres)
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    if (jsonData.length === 0) {
+                        alert('El fitxer Excel està buit o no té el format correcte.');
+                        return;
+                    }
+
+                    // Confirmar importació
+                    if (!confirm(`S'importaran ${jsonData.length} registres. Això substituirà les dades actuals. Vols continuar?`)) {
+                        return;
+                    }
+
+                    // Convertir dades d'Excel al format intern
+                    const importedRecords = [];
+                    const importedRegenerations = [];
+
+                    jsonData.forEach((row, index) => {
+                        try {
+                            // Detectar format de data
+                            let datetime;
+                            const dateField = row['Data i Hora'] || row['Data'] || row['DateTime'];
+                            
+                            if (typeof dateField === 'number') {
+                                // Data d'Excel (número sèrie)
+                                datetime = new Date((dateField - 25569) * 86400 * 1000);
+                            } else if (typeof dateField === 'string') {
+                                // Cadena de data
+                                datetime = new Date(dateField);
+                            } else {
+                                throw new Error('Format de data no vàlid');
+                            }
+
+                            if (isNaN(datetime.getTime())) {
+                                throw new Error('Data no vàlida');
+                            }
+
+                            const isRegeneration = (row['Tipus'] || '').toString().toUpperCase().includes('REGENERACIÓ');
+                            
+                            const record = {
+                                id: Date.now() + index,
+                                datetime: datetime.toISOString(),
+                                hardness: isRegeneration ? 0 : parseFloat(row['Duresa (°f)'] || row['Duresa'] || 0),
+                                liters: isRegeneration ? 0 : parseInt(row['Litres Pendents'] || row['Litres'] || 0),
+                                isRegeneration: isRegeneration
+                            };
+
+                            importedRecords.push(record);
+                            
+                            if (isRegeneration) {
+                                importedRegenerations.push(datetime.toISOString());
+                            }
+                        } catch (error) {
+                            console.warn(`Error processant fila ${index + 1}:`, error);
+                        }
+                    });
+
+                    if (importedRecords.length === 0) {
+                        alert('No s\'han pogut importar dades vàlides del fitxer.');
+                        return;
+                    }
+
+                    // Actualitzar dades
+                    records = importedRecords;
+                    regenerations = importedRegenerations;
+                    
+                    // Ordenar per data
+                    records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+                    regenerations.sort((a, b) => new Date(b) - new Date(a));
+
+                    saveData();
+                    updateDisplay();
+                    
+                    alert(`S'han importat correctament ${importedRecords.length} registres!`);
+                    
+                } catch (error) {
+                    console.error('Error important fitxer Excel:', error);
+                    alert('Error llegint el fitxer Excel. Assegura\'t que el format és correcte.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; // Netejar input
+        }
+
+        function downloadBackup() {
+            const backup = {
+                records: records,
+                regenerations: regenerations,
+                exportDate: new Date().toISOString(),
+                version: '2.0'
+            };
+            
+            const dataStr = JSON.stringify(backup, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `backup_control_aigua_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            console.log('Còpia de seguretat descarregada');
+        }
+
+        function loadBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    
+                    if (!backup.records || !Array.isArray(backup.records)) {
+                        throw new Error('Format de còpia de seguretat no vàlid');
+                    }
+
+                    if (!confirm(`S'importaran ${backup.records.length} registres de la còpia de seguretat. Això substituirà les dades actuals. Vols continuar?`)) {
+                        return;
+                    }
+
+                    records = backup.records || [];
+                    regenerations = backup.regenerations || [];
+                    
+                    saveData();
+                    updateDisplay();
+                    
+                    alert('Còpia de seguretat carregada correctament!');
+                    
+                } catch (error) {
+                    console.error('Error carregant còpia de seguretat:', error);
+                    alert('Error llegint la còpia de seguretat. Format no vàlid.');
+                }
+            };
+            
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // Inicialitzar l'aplicació
+        window.onload = function() {
+            console.log('Aplicació carregada');
+            updateDisplay();
+        };
+    </script>
+</body>
+</html>
