@@ -460,6 +460,21 @@
             records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
             
             saveData();
+
+            // Enviar a Google Sheets
+            fetch("https://script.google.com/macros/s/AKfycbxKaNOH6oCYR-HKvupKEPdL7RQRMDpXwX-apj1uCdd21i_SuDG8nWUNBapDQWPidaZftw/exec", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    datetime: record.datetime,
+                    hardness: record.hardness,
+                    liters: record.liters,
+                    isRegeneration: false
+                })
+            })
+            .then(res => res.text())
+            .then(res => console.log("Google Sheets:", res))
+            .catch(err => console.error("Error enviant a Sheets:", err));
             updateDisplay();
             
             // Netejar camps
@@ -491,6 +506,21 @@
             regenerations.sort((a, b) => new Date(b) - new Date(a));
             
             saveData();
+
+            // Enviar a Google Sheets
+            fetch("https://script.google.com/macros/s/AKfycbxKaNOH6oCYR-HKvupKEPdL7RQRMDpXwX-apj1uCdd21i_SuDG8nWUNBapDQWPidaZftw/exec", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    datetime: regeneration.datetime,
+                    hardness: 0,
+                    liters: 0,
+                    isRegeneration: true
+                })
+            })
+            .then(res => res.text())
+            .then(res => console.log("Google Sheets:", res))
+            .catch(err => console.error("Error enviant a Sheets:", err));
             updateDisplay();
             
             document.getElementById('recordDate').value = '';
@@ -1307,6 +1337,21 @@
             records.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
             
             saveData();
+
+            // Enviar a Google Sheets
+            fetch("https://script.google.com/macros/s/AKfycbxKaNOH6oCYR-HKvupKEPdL7RQRMDpXwX-apj1uCdd21i_SuDG8nWUNBapDQWPidaZftw/exec", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    datetime: record.datetime,
+                    hardness: record.hardness,
+                    liters: record.liters,
+                    isRegeneration: false
+                })
+            })
+            .then(res => res.text())
+            .then(res => console.log("Google Sheets:", res))
+            .catch(err => console.error("Error enviant a Sheets:", err));
             updateDisplay();
             
             // Auto-save a Excel si hi ha més de 3 registres
@@ -1345,6 +1390,21 @@
             regenerations.sort((a, b) => new Date(b) - new Date(a));
             
             saveData();
+
+            // Enviar a Google Sheets
+            fetch("https://script.google.com/macros/s/AKfycbxKaNOH6oCYR-HKvupKEPdL7RQRMDpXwX-apj1uCdd21i_SuDG8nWUNBapDQWPidaZftw/exec", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    datetime: regeneration.datetime,
+                    hardness: 0,
+                    liters: 0,
+                    isRegeneration: true
+                })
+            })
+            .then(res => res.text())
+            .then(res => console.log("Google Sheets:", res))
+            .catch(err => console.error("Error enviant a Sheets:", err));
             updateDisplay();
             
             // Auto-save després de regeneració
